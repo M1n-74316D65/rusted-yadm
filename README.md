@@ -21,22 +21,22 @@ Rusted-YADM is a command-line dotfile manager written in Rust. It helps you mana
 
 1. Clone this repository:
 
-```bash
-git clone https://github.com/M1n-74316D65/rusted-yadm.git
-cd rusted-yadm
-```
+    ```bash
+    git clone https://github.com/M1n-74316D65/rusted-yadm.git
+    cd rusted-yadm
+    ```
 
 2. Build the project:
 
-```bash
-cargo build --release
-```
+    ```bash
+    cargo build --release
+    ```
 
 3. Install the binary:
 
-```bash
-cargo install --path .
-```
+    ```bash
+    cargo install --path .
+    ```
 
 ## Usage
 

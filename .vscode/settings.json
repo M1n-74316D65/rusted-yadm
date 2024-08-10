@@ -1,6 +1,14 @@
 {
     "cSpell.words": [
+        "dotfile",
+        "Dotfile",
+        "dotfiles",
         "gitrepo",
         "yadm"
+    ],
+    "languageToolLinter.languageTool.ignoredWordsInWorkspace": [
+        "dotfile",
+        "dotfiles",
+        "rusted-yadm"
     ]
 }
