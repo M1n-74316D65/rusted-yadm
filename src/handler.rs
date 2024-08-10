@@ -1,28 +1,101 @@
 use crate::git;
 use crate::utils;
-use git2::{IndexAddOption, Signature};
+use git2::Signature;
+use std::fs;
+use std::path::Path;
 
-pub fn clone(url: &str) {
-    git::clone(url, utils::folder_path().as_str());
+pub fn clone(url: &str, force: bool) -> Result<(), Box<dyn std::error::Error>> {
+    let loading = utils::LoadingAnimation::new();
+    loading.start("Cloning repository...");
+
+    let result = git::clone(url, utils::folder_path().as_str(), force);
+    loading.stop();
+
+    match result {
+        Ok(_) => println!("Repo cloned successfully"),
+        Err(e) => eprintln!("Repo clone failed: {}", e),
+    }
+
+    let loading = utils::LoadingAnimation::new();
+    loading.start("Copying files to home directory...");
+
+    let copy_result = utils::copy_files_to_home();
+    loading.stop();
+
+    match copy_result {
+        Ok(_) => println!("Repo copied to home directory successfully"),
+        Err(e) => eprintln!("Repo copy failed: {}", e),
+    }
+
+    Ok(())
 }
 
-pub fn clone_ssh(url: &str) {
-    git::clone_ssh(url, utils::folder_path().as_str());
+pub fn clone_ssh(url: &str, force: bool) -> Result<(), Box<dyn std::error::Error>> {
+    let loading = utils::LoadingAnimation::new();
+    loading.start("Cloning repository via SSH...");
+
+    let result = git::clone_ssh(url, utils::folder_path().as_str(), force);
+    loading.stop();
+
+    match result {
+        Ok(_) => println!("Repo cloned successfully"),
+        Err(e) => eprintln!("Repo clone failed: {}", e),
+    }
+
+    let loading = utils::LoadingAnimation::new();
+    loading.start("Copying files to home directory...");
+
+    let copy_result = utils::copy_files_to_home();
+    loading.stop();
+
+    match copy_result {
+        Ok(_) => println!("Repo copied to home directory successfully"),
+        Err(e) => eprintln!("Repo copy failed: {}", e),
+    }
+
+    Ok(())
 }
 
-pub fn add(file_path: &str) -> Result<(), git2::Error> {
+pub fn add(file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
     let repo = git::get_repo();
-
-    // Get the index (staging area).
     let mut index = repo.index()?;
 
-    // Add file to the index.
-    index.add_all([&file_path].iter(), IndexAddOption::DEFAULT, None)?;
+    // Get the home directory
+    let home_dir = dirs::home_dir().ok_or("Could not get home directory")?;
+
+    // Construct the full path of the source file
+    let source_path = home_dir.join(file_path.trim_start_matches("~/"));
+
+    println!("Source path: {:?}", source_path);
+
+    // Check if the source file exists
+    if !source_path.exists() {
+        return Err(format!("File does not exist: {:?}", source_path).into());
+    }
+
+    // Get the repository's working directory
+    let repo_dir = repo.workdir().ok_or("Could not get repository directory")?;
+
+    // Construct the destination path in the repository
+    let dest_path = repo_dir.join(file_path.trim_start_matches("~/"));
+
+    println!("Destination path: {:?}", dest_path);
+
+    // Create parent directories if they don't exist
+    if let Some(parent) = dest_path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+
+    // Copy the file from home directory to the repository
+    fs::copy(&source_path, &dest_path)?;
+
+    // Add the file to the index
+    index.add_path(Path::new(file_path.trim_start_matches("~/")))?;
+
+    // Write the index to disk
     index.write()?;
 
-    // Write the index to the tree (create the tree object).
-    index.write_tree()?;
-
+    println!("Added file: {}", file_path);
     Ok(())
 }
 
@@ -72,8 +145,8 @@ pub fn commit(message: &str) -> Result<(), git2::Error> {
 }
 
 pub fn push() {
-    let repo = git::get_repo();
-
-    let mut remote = repo.find_remote("origin").unwrap();
-    remote.push(&["refs/heads/master"], None).unwrap();
+    match git::push() {
+        Ok(_) => println!("Push successful"),
+        Err(e) => eprintln!("Push failed: {}", e),
+    }
 }

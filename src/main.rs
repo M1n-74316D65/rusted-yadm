@@ -9,6 +9,9 @@ mod utils;
 struct CloneArgs {
     /// Repo to clone
     title: String,
+    /// Force clone even if directory exists
+    #[arg(short, long)]
+    force: bool,
 }
 
 #[derive(Parser, Debug, Clone)]
@@ -103,15 +106,21 @@ fn main() {
     match &args.subcommand {
         Some(CliSub::Clone(args)) => {
             if args.title.starts_with("git@") {
-                handler::clone_ssh(args.title.as_str());
+                match handler::clone_ssh(&args.title, args.force) {
+                    Ok(_) => println!("SSH clone successful"),
+                    Err(e) => eprintln!("SSH clone failed: {}", e),
+                }
             } else {
-                handler::clone(args.title.as_str());
+                match handler::clone(&args.title, args.force) {
+                    Ok(_) => println!("Clone successful"),
+                    Err(e) => eprintln!("Clone failed: {}", e),
+                }
             }
         }
-        // TODO: change _lol
-        Some(CliSub::Add(args)) => {
-            let _lol = handler::add(args.title.as_str());
-        }
+        Some(CliSub::Add(args)) => match handler::add(&args.title) {
+            Ok(_) => println!("File added successfully"),
+            Err(e) => eprintln!("Failed to add file: {}", e),
+        },
         // TODO: change _lol
         Some(CliSub::Commit(args)) => {
             let _lol = handler::commit(args.title.as_str());
