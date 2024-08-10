@@ -127,7 +127,7 @@ fn main() {
         }
         // TODO: change _lol
         Some(CliSub::Push(_args)) => {
-            let _lol = handler::push();
+            handler::push();
         }
 
         None => println!("No command provided"),

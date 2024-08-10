@@ -43,19 +43,19 @@ pub fn clone_ssh(url: &str, path: &str, force: bool) -> Result<(), Box<dyn std::
 
 pub fn open(path: &str) -> Repository {
     // Remove this line: get_repo();
-    let repo = match Repository::open(path) {
+    
+
+    match Repository::open(path) {
         Ok(repo) => repo,
         Err(e) => panic!("failed to open: {}", e),
-    };
-
-    repo
+    }
 }
 
 pub fn get_repo() -> Repository {
     let folder_path = folder_path();
     let repo_path = folder_path.as_str();
 
-    open(&repo_path)
+    open(repo_path)
 }
 
 pub fn push() -> Result<(), git2::Error> {
