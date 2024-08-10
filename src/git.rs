@@ -1,4 +1,4 @@
-use dirs::config_dir;
+use crate::utils::folder_path;
 use git2::Repository;
 
 pub fn clone(url: &str, path: &str) -> Repository {
@@ -16,16 +16,6 @@ pub fn open(path: &str) -> Repository {
         Err(e) => panic!("failed to open: {}", e),
     };
     repo
-}
-
-fn folder_path() -> String {
-    config_dir()
-        .unwrap()
-        .join("rusted-yadm")
-        .join("gitrepo")
-        .to_str()
-        .unwrap()
-        .to_string()
 }
 
 pub fn get_repo() -> Repository {

@@ -3,6 +3,7 @@ use clap::{ArgMatches, Args as _, Command, FromArgMatches, Parser, Subcommand};
 
 mod git;
 mod handler;
+mod utils;
 
 #[derive(Parser, Debug, Clone)]
 struct CloneArgs {

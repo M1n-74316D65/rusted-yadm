@@ -1,37 +1,9 @@
 use crate::git;
+use crate::utils;
 use git2::{IndexAddOption, Signature};
-use std::process::Command;
-use std::str;
-
-fn get_git_user_info() -> (String, String) {
-    // Get Git user name
-    let name_output = Command::new("git")
-        .arg("config")
-        .arg("user.name")
-        .output()
-        .expect("Failed to execute git command");
-
-    let name = str::from_utf8(&name_output.stdout)
-        .expect("Failed to parse output")
-        .trim();
-
-    // Get Git user email
-    let email_output = Command::new("git")
-        .arg("config")
-        .arg("user.email")
-        .output()
-        .expect("Failed to execute git command");
-
-    let email = str::from_utf8(&email_output.stdout)
-        .expect("Failed to parse output")
-        .trim();
-
-    // Return a tuple of the name and email
-    (name.to_string(), email.to_string())
-}
 
 pub fn clone(url: &str) {
-    git::clone(url, "dwadaw");
+    git::clone(url, utils::folder_path().as_str());
 }
 
 pub fn add(file_path: &str) -> Result<(), git2::Error> {
@@ -52,7 +24,7 @@ pub fn add(file_path: &str) -> Result<(), git2::Error> {
 }
 
 pub fn commit(message: &str) -> Result<(), git2::Error> {
-    let (name, email) = get_git_user_info();
+    let (name, email) = utils::get_git_user_info();
     let repo = git::get_repo();
 
     let mut index = repo.index()?;
