@@ -1,6 +1,6 @@
 [package]
 name = "rusted-yadm"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["M1n-74316D65"]
 edition = "2021"
 description = "Rusted - Yet Another Dotfiles Manager"
