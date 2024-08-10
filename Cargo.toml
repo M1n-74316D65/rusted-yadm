@@ -1,7 +1,15 @@
 [package]
 name = "rusted-yadm"
 version = "0.1.0"
+authors = ["M1n-74316D65"]
 edition = "2021"
+description = "Rusted - Yet Another Dotfiles Manager"
+readme = "README.md"
+homepage = "https://github.com/M1n-74316D65/rusted-yadm"
+repository = "https://github.com/M1n-74316D65/rusted-yadm"
+license = "GPL-3.0"
+keywords = ["dotfiles", "cli", "dotfiles manager"]
+categories = ["command-line-utilities", "command-line-interface"]
 
 [dependencies]
 
