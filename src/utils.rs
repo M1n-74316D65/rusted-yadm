@@ -1,4 +1,4 @@
-use dirs::config_dir;
+use dirs::data_local_dir;
 use std::process::Command;
 use std::str;
 
@@ -30,10 +30,10 @@ pub fn get_git_user_info() -> (String, String) {
 }
 
 pub fn folder_path() -> String {
-    config_dir()
+    data_local_dir()
         .unwrap()
         .join("rusted-yadm")
-        .join("gitrepo")
+        .join("repository")
         .to_str()
         .unwrap()
         .to_string()

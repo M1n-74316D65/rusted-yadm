@@ -6,6 +6,10 @@ pub fn clone(url: &str) {
     git::clone(url, utils::folder_path().as_str());
 }
 
+pub fn clone_ssh(url: &str) {
+    git::clone_ssh(url, utils::folder_path().as_str());
+}
+
 pub fn add(file_path: &str) -> Result<(), git2::Error> {
     let repo = git::get_repo();
 
@@ -65,4 +69,11 @@ pub fn commit(message: &str) -> Result<(), git2::Error> {
     }
 
     Ok(())
+}
+
+pub fn push() {
+    let repo = git::get_repo();
+
+    let mut remote = repo.find_remote("origin").unwrap();
+    remote.push(&["refs/heads/master"], None).unwrap();
 }
