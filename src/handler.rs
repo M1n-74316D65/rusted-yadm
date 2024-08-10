@@ -17,8 +17,7 @@ pub fn add(file_path: &str) -> Result<(), git2::Error> {
     index.write()?;
 
     // Write the index to the tree (create the tree object).
-    let tree_id = index.write_tree()?;
-    let _tree = repo.find_tree(tree_id)?;
+    index.write_tree()?;
 
     Ok(())
 }
