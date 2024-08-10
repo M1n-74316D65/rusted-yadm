@@ -12,22 +12,27 @@ pub fn clone(url: &str, force: bool) -> Result<(), Box<dyn std::error::Error>> {
     loading.stop();
 
     match result {
-        Ok(_) => println!("Repo cloned successfully"),
-        Err(e) => eprintln!("Repo clone failed: {}", e),
+        Ok(_) => {
+            println!("Repo cloned successfully");
+
+            let loading = utils::LoadingAnimation::new();
+            loading.start("Copying files to home directory...");
+
+            let copy_result = utils::copy_files_to_home();
+            loading.stop();
+
+            match copy_result {
+                Ok(_) => println!("Files copied to home directory successfully"),
+                Err(e) => eprintln!("Failed to copy files: {}", e),
+            }
+
+            Ok(())
+        }
+        Err(e) => {
+            eprintln!("Repo clone failed: {}", e);
+            Err(e)
+        }
     }
-
-    let loading = utils::LoadingAnimation::new();
-    loading.start("Copying files to home directory...");
-
-    let copy_result = utils::copy_files_to_home();
-    loading.stop();
-
-    match copy_result {
-        Ok(_) => println!("Repo copied to home directory successfully"),
-        Err(e) => eprintln!("Repo copy failed: {}", e),
-    }
-
-    Ok(())
 }
 
 pub fn clone_ssh(url: &str, force: bool) -> Result<(), Box<dyn std::error::Error>> {
@@ -38,22 +43,27 @@ pub fn clone_ssh(url: &str, force: bool) -> Result<(), Box<dyn std::error::Error
     loading.stop();
 
     match result {
-        Ok(_) => println!("Repo cloned successfully"),
-        Err(e) => eprintln!("Repo clone failed: {}", e),
+        Ok(_) => {
+            println!("Repo cloned successfully");
+
+            let loading = utils::LoadingAnimation::new();
+            loading.start("Copying files to home directory...");
+
+            let copy_result = utils::copy_files_to_home();
+            loading.stop();
+
+            match copy_result {
+                Ok(_) => println!("Files copied to home directory successfully"),
+                Err(e) => eprintln!("Failed to copy files: {}", e),
+            }
+
+            Ok(())
+        }
+        Err(e) => {
+            eprintln!("Repo clone failed: {}", e);
+            Err(e)
+        }
     }
-
-    let loading = utils::LoadingAnimation::new();
-    loading.start("Copying files to home directory...");
-
-    let copy_result = utils::copy_files_to_home();
-    loading.stop();
-
-    match copy_result {
-        Ok(_) => println!("Repo copied to home directory successfully"),
-        Err(e) => eprintln!("Repo copy failed: {}", e),
-    }
-
-    Ok(())
 }
 
 pub fn add(file_path: &str) -> Result<(), Box<dyn std::error::Error>> {

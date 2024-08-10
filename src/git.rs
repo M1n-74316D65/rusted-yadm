@@ -5,16 +5,32 @@ use std::fs;
 use std::path::Path;
 
 pub fn clone(url: &str, path: &str, force: bool) -> Result<(), Box<dyn std::error::Error>> {
-    if force && Path::new(path).exists() {
-        let _ = fs::remove_dir_all(path);
+    if Path::new(path).exists() {
+        if force {
+            println!("Force flag set. Removing existing directory.");
+            fs::remove_dir_all(path)?;
+        } else {
+            return Err(Box::new(std::io::Error::new(
+                std::io::ErrorKind::AlreadyExists,
+                "Directory already exists. Use --force to overwrite.",
+            )));
+        }
     }
     Repository::clone(url, path)?;
     Ok(())
 }
 
 pub fn clone_ssh(url: &str, path: &str, force: bool) -> Result<(), Box<dyn std::error::Error>> {
-    if force && Path::new(path).exists() {
-        fs::remove_dir_all(path)?;
+    if Path::new(path).exists() {
+        if force {
+            println!("Force flag set. Removing existing directory.");
+            fs::remove_dir_all(path)?;
+        } else {
+            return Err(Box::new(std::io::Error::new(
+                std::io::ErrorKind::AlreadyExists,
+                "Directory already exists. Use --force to overwrite.",
+            )));
+        }
     }
 
     // Prepare callbacks.
@@ -43,7 +59,6 @@ pub fn clone_ssh(url: &str, path: &str, force: bool) -> Result<(), Box<dyn std::
 
 pub fn open(path: &str) -> Repository {
     // Remove this line: get_repo();
-    
 
     match Repository::open(path) {
         Ok(repo) => repo,
