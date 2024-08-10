@@ -101,35 +101,72 @@ struct Cli {
     subcommand: Option<CliSub>,
 }
 
+use utils::LoadingAnimation;
+
 fn main() {
     let args = Cli::parse();
     match &args.subcommand {
         Some(CliSub::Clone(args)) => {
-            if args.title.starts_with("git@") {
-                match handler::clone_ssh(&args.title, args.force) {
-                    Ok(_) => println!("SSH clone successful"),
-                    Err(e) => eprintln!("SSH clone failed: {}", e),
-                }
+            let loading = LoadingAnimation::new();
+            loading.start("Cloning repository...");
+
+            let result = if args.title.starts_with("git@") {
+                handler::clone_ssh(&args.title, args.force)
             } else {
-                match handler::clone(&args.title, args.force) {
-                    Ok(_) => println!("Clone successful"),
-                    Err(e) => eprintln!("Clone failed: {}", e),
-                }
+                handler::clone(&args.title, args.force)
+            };
+
+            loading.stop();
+
+            match result {
+                Ok(_) => println!("Clone successful"),
+                Err(e) => eprintln!("Clone failed: {}", e),
+            }
+
+            let loading = LoadingAnimation::new();
+            loading.start("Copying files to home directory...");
+
+            match utils::copy_files_to_home() {
+                Ok(_) => println!("Files copied to home directory successfully"),
+                Err(e) => eprintln!("Failed to copy files: {}", e),
+            }
+
+            loading.stop();
+        }
+        Some(CliSub::Add(args)) => {
+            let loading = LoadingAnimation::new();
+            loading.start("Adding file...");
+
+            let result = handler::add(&args.title);
+
+            loading.stop();
+
+            match result {
+                Ok(_) => println!("File added successfully"),
+                Err(e) => eprintln!("Failed to add file: {}", e),
             }
         }
-        Some(CliSub::Add(args)) => match handler::add(&args.title) {
-            Ok(_) => println!("File added successfully"),
-            Err(e) => eprintln!("Failed to add file: {}", e),
-        },
-        // TODO: change _lol
         Some(CliSub::Commit(args)) => {
-            let _lol = handler::commit(args.title.as_str());
-        }
-        // TODO: change _lol
-        Some(CliSub::Push(_args)) => {
-            handler::push();
-        }
+            let loading = LoadingAnimation::new();
+            loading.start("Committing changes...");
 
-        None => println!("No command provided"),
+            let result = handler::commit(&args.title);
+
+            loading.stop();
+
+            match result {
+                Ok(_) => println!("Changes committed successfully"),
+                Err(e) => eprintln!("Failed to commit changes: {}", e),
+            }
+        }
+        Some(CliSub::Push(_args)) => {
+            let loading = LoadingAnimation::new();
+            loading.start("Pushing changes...");
+
+            handler::push();
+
+            loading.stop();
+        }
+        None => println!("No command provided. Use --help for usage information."),
     }
 }

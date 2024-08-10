@@ -88,7 +88,16 @@ pub fn copy_files_to_home() -> Result<(), Box<dyn std::error::Error>> {
     let repo_path = Path::new(folder_path.as_str());
     let mut skipped_files = Vec::new();
 
-    for entry in WalkDir::new(repo_path).into_iter().filter_map(|e| e.ok()) {
+    for entry in WalkDir::new(repo_path)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|e| {
+            !e.path()
+                .strip_prefix(repo_path)
+                .unwrap()
+                .starts_with(".git")
+        })
+    {
         let path = entry.path();
         if path.is_file() {
             let relative_path = path.strip_prefix(repo_path)?;
