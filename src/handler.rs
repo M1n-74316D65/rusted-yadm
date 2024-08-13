@@ -151,3 +151,11 @@ pub fn pull() {
         Err(e) => eprintln!("Pull failed: {}", e),
     }
 }
+
+
+pub fn diff() {
+    match git::diff() {
+        Ok(_) => println!("Diff successful"),
+        Err(e) => eprintln!("Diff failed: {}", e),
+    }
+}

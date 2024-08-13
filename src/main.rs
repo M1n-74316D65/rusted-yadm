@@ -38,6 +38,12 @@ struct PullArgs {
     title: String,
 }
 
+#[derive(Parser, Debug, Clone)]
+struct DiffArgs {
+    /// Commit message
+    title: String,
+}
+
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 enum CliSub {
@@ -46,6 +52,7 @@ enum CliSub {
     Commit(CommitArgs),
     Push(PushArgs),
     Pull(PullArgs),
+    Diff(DiffArgs),
 }
 
 impl FromArgMatches for CliSub {
@@ -56,6 +63,7 @@ impl FromArgMatches for CliSub {
             Some(("commit", args)) => Ok(Self::Commit(CommitArgs::from_arg_matches(args)?)),
             Some(("push", args)) => Ok(Self::Push(PushArgs::from_arg_matches(args)?)),
             Some(("pull", args)) => Ok(Self::Pull(PullArgs::from_arg_matches(args)?)),
+            Some(("diff", args)) => Ok(Self::Diff(DiffArgs::from_arg_matches(args)?)),
             Some((_, _)) => Err(Error::raw(
                 ErrorKind::InvalidSubcommand,
                 "Invalid subcommands",
@@ -73,6 +81,7 @@ impl FromArgMatches for CliSub {
             Some(("commit", args)) => *self = Self::Commit(CommitArgs::from_arg_matches(args)?),
             Some(("push", args)) => *self = Self::Push(PushArgs::from_arg_matches(args)?),
             Some(("pull", args)) => *self = Self::Pull(PullArgs::from_arg_matches(args)?),
+            Some(("diff", args)) => *self = Self::Diff(DiffArgs::from_arg_matches(args)?),
             Some((_, _)) => {
                 return Err(Error::raw(
                     ErrorKind::InvalidSubcommand,
@@ -92,6 +101,7 @@ impl Subcommand for CliSub {
             .subcommand(CommitArgs::augment_args(Command::new("commit")))
             .subcommand(PushArgs::augment_args(Command::new("push")))
             .subcommand(PullArgs::augment_args(Command::new("pull")))
+            .subcommand(DiffArgs::augment_args(Command::new("diff")))
     }
     fn augment_subcommands_for_update(cmd: Command) -> Command {
         cmd.subcommand(CloneArgs::augment_args(Command::new("clone")))
@@ -99,6 +109,7 @@ impl Subcommand for CliSub {
             .subcommand(CommitArgs::augment_args(Command::new("commit")))
             .subcommand(PushArgs::augment_args(Command::new("push")))
             .subcommand(PullArgs::augment_args(Command::new("pull")))
+            .subcommand(DiffArgs::augment_args(Command::new("diff")))
     }
     fn has_subcommand(name: &str) -> bool {
         matches!(name, "clone" | "add" | "commit" | "push")
@@ -183,6 +194,14 @@ fn main() {
             loading.start("Pulling changes...");
 
             handler::pull();
+
+            loading.stop();
+        }
+        Some(CliSub::Diff(_args)) => {
+            let loading = LoadingAnimation::new();
+            loading.start("Diffing changes...");
+
+            handler::diff();
 
             loading.stop();
         }

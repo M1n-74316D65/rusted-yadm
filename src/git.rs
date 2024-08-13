@@ -1,5 +1,5 @@
 use crate::utils::folder_path;
-use git2::{build::RepoBuilder, Cred, PushOptions, RemoteCallbacks, Repository};
+use git2::{build::RepoBuilder, Cred, DiffOptions, PushOptions, RemoteCallbacks, Repository};
 use std::env;
 use std::fs;
 use std::path::Path;
@@ -151,6 +151,25 @@ pub fn pull() -> Result<(), git2::Error> {
         // Normal merge
         repo.merge(&[&fetch_commit], None, None)?;
     }
+
+    Ok(())
+}
+
+pub fn diff() -> Result<(), git2::Error> {
+    let repo = get_repo();
+
+    let head_commit = repo.head()?.peel_to_commit()?;
+
+    let tree = head_commit.tree()?;
+
+    let mut diff_opts = DiffOptions::new();
+
+    let diff = repo.diff_tree_to_workdir_with_index(Some(&tree), Some(&mut diff_opts))?;
+
+    diff.print(DiffFormat::Patch, |delta, hunk, line| {
+        print!("{}", std::str::from_utf8(line.content()).unwrap());
+        true
+    })?;
 
     Ok(())
 }
