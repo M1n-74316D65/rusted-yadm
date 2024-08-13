@@ -144,3 +144,10 @@ pub fn push() {
         Err(e) => eprintln!("Push failed: {}", e),
     }
 }
+
+pub fn pull() {
+    match git::pull() {
+        Ok(_) => println!("Pull successful"),
+        Err(e) => eprintln!("Pull failed: {}", e),
+    }
+}

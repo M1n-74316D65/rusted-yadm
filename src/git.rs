@@ -105,3 +105,52 @@ pub fn push() -> Result<(), git2::Error> {
 
     Ok(())
 }
+
+pub fn pull() -> Result<(), git2::Error> {
+    let repo = get_repo();
+
+    let mut callbacks = RemoteCallbacks::new();
+    callbacks.credentials(|_url, username_from_url, _allowed_types| {
+        Cred::ssh_key(
+            username_from_url.unwrap_or("git"),
+            None,
+            std::path::Path::new(&format!("{}/.ssh/id_rsa", env::var("HOME").unwrap())),
+            None,
+        )
+    });
+
+    let mut fetch_options = git2::FetchOptions::new();
+    fetch_options.remote_callbacks(callbacks);
+
+    let mut remote = repo.find_remote("origin")?;
+
+    // Get the name of the current branch
+    let head = repo.head()?;
+    let branch_name = head
+        .shorthand()
+        .ok_or(git2::Error::from_str("Failed to get branch name"))?;
+
+    // Fetch the current branch from the remote
+    remote.fetch(&[branch_name], Some(&mut fetch_options), None)?;
+
+    // Get the fetched commit
+    let fetch_head = repo.find_reference("FETCH_HEAD")?;
+    let fetch_commit = repo.reference_to_annotated_commit(&fetch_head)?;
+
+    // Perform the merge
+    let (merge_analysis, _merge_preference) = repo.merge_analysis(&[&fetch_commit])?;
+
+    if merge_analysis.is_fast_forward() {
+        // Fast-forward merge
+        let refname = format!("refs/heads/{}", branch_name);
+        let mut reference = repo.find_reference(&refname)?;
+        reference.set_target(fetch_commit.id(), "Fast-forward")?;
+        repo.set_head(&refname)?;
+        repo.checkout_head(Some(git2::build::CheckoutBuilder::default().force()))?;
+    } else {
+        // Normal merge
+        repo.merge(&[&fetch_commit], None, None)?;
+    }
+
+    Ok(())
+}
