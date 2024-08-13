@@ -5,21 +5,13 @@ use std::fs;
 use std::path::Path;
 
 pub fn clone(url: &str, force: bool) -> Result<(), Box<dyn std::error::Error>> {
-    let loading = utils::LoadingAnimation::new();
-    loading.start("Cloning repository...");
-
     let result = git::clone(url, utils::folder_path().as_str(), force);
-    loading.stop();
 
     match result {
         Ok(_) => {
             println!("Repo cloned successfully");
 
-            let loading = utils::LoadingAnimation::new();
-            loading.start("Copying files to home directory...");
-
             let copy_result = utils::copy_files_to_home();
-            loading.stop();
 
             match copy_result {
                 Ok(_) => println!("Files copied to home directory successfully"),
@@ -36,21 +28,13 @@ pub fn clone(url: &str, force: bool) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 pub fn clone_ssh(url: &str, force: bool) -> Result<(), Box<dyn std::error::Error>> {
-    let loading = utils::LoadingAnimation::new();
-    loading.start("Cloning repository via SSH...");
-
     let result = git::clone_ssh(url, utils::folder_path().as_str(), force);
-    loading.stop();
 
     match result {
         Ok(_) => {
             println!("Repo cloned successfully");
 
-            let loading = utils::LoadingAnimation::new();
-            loading.start("Copying files to home directory...");
-
             let copy_result = utils::copy_files_to_home();
-            loading.stop();
 
             match copy_result {
                 Ok(_) => println!("Files copied to home directory successfully"),
