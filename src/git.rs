@@ -329,11 +329,18 @@ pub fn validate_symlinks(
     for file in files {
         let file_path = workdir.join(file);
 
-        if file_path.exists() && file_path.is_symlink() {
+        if file_path.is_symlink() {
             // Check if symlink target exists
             match fs::read_link(&file_path) {
                 Ok(target) => {
-                    if !target.exists() {
+                    // Resolve the target path relative to the symlink's parent directory
+                    let resolved_target = if target.is_absolute() {
+                        target.clone()
+                    } else {
+                        file_path.parent().unwrap_or(&workdir).join(&target)
+                    };
+
+                    if !resolved_target.exists() {
                         return Err(format!(
                             "Broken symlink detected: {} -> {}",
                             file,

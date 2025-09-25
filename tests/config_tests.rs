@@ -150,20 +150,19 @@ mod tests {
         config.ssh.agent = true;
         config.git.auto_private = true;
 
-        // Mock the config path to use our temp directory
-        // This is a bit hacky but works for testing
-        let original_config_path = Config::get_config_path().unwrap();
+        // Test serialization and deserialization directly
+        let content = serde_yaml::to_string(&config).expect("Failed to serialize config");
+        fs::write(&config_path, content).expect("Failed to write config file");
 
-        // We can't easily test save/load without modifying the global config path
-        // So we'll just test that the methods exist and don't panic
-        let result = config.save();
-        match result {
-            Ok(_) => println!("Config saved successfully"),
-            Err(e) => println!("Config save failed (expected in test): {}", e),
-        }
+        // Test reading back
+        let read_content = fs::read_to_string(&config_path).expect("Failed to read config file");
+        let loaded_config: Config = serde_yaml::from_str(&read_content).expect("Failed to deserialize config");
 
-        let load_result = Config::load();
-        assert!(load_result.is_ok());
+        // Verify the values
+        assert_eq!(loaded_config.local.class, config.local.class);
+        assert_eq!(loaded_config.local.os, config.local.os);
+        assert_eq!(loaded_config.ssh.agent, config.ssh.agent);
+        assert_eq!(loaded_config.git.auto_private, config.git.auto_private);
     }
 
     #[test]

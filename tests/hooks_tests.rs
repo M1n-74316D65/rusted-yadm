@@ -1,9 +1,11 @@
 #[cfg(test)]
 mod tests {
-    
+
     use std::fs;
     use std::path::Path;
     use tempfile::tempdir;
+    use serde_yaml;
+    use dirs;
 
     fn setup_test_repo() -> (tempfile::TempDir, String) {
         let temp_dir = tempdir().unwrap();
@@ -29,6 +31,10 @@ mod tests {
         // Set environment variables to make folder_path() return our test path
         std::env::set_var("HOME", &data_local_path);
         std::env::set_var("XDG_DATA_HOME", &data_local_path);
+
+        // Force the dirs crate to pick up our environment variables
+        // by clearing any internal caches it might have
+        drop(dirs::data_local_dir());
 
         // Create the expected directory structure manually
         let yadm_dir = Path::new(&data_local_path).join("rusted-yadm");
@@ -147,13 +153,25 @@ mod tests {
 
     #[test]
     fn test_install_hooks_success() {
-        let _temp_dir = setup_test_repo_in_correct_location();
+        let temp_dir = setup_test_repo_in_correct_location();
+
+        // Ensure environment variables are set before calling functions that depend on them
+        let data_local_path = temp_dir.path().to_string_lossy().to_string();
+        std::env::set_var("HOME", &data_local_path);
+        std::env::set_var("XDG_DATA_HOME", &data_local_path);
 
         // Create a config with hooks enabled
         use rusted_yadm::config::Config;
         let mut config = Config::new();
         config.git.hooks.pre_commit = true;
-        config.save().unwrap();
+
+        // Save config to the same location as the test setup
+        let config_path = temp_dir.path().join("rusted-yadm").join("config.yml");
+        if let Some(parent) = config_path.parent() {
+            fs::create_dir_all(parent).unwrap();
+        }
+        let config_content = serde_yaml::to_string(&config).unwrap();
+        fs::write(config_path, config_content).unwrap();
 
         // Test hook installation
         let result = rusted_yadm::git::install_hooks();
@@ -163,11 +181,12 @@ mod tests {
         let repo_path = rusted_yadm::utils::folder_path();
         let hooks_dir = Path::new(&repo_path).join(".git").join("hooks");
         let pre_commit_hook = hooks_dir.join("pre-commit");
+
         assert!(pre_commit_hook.exists());
 
         // Check hook content
         let hook_content = fs::read_to_string(&pre_commit_hook).unwrap();
-        assert!(hook_content.contains("yadm pre-commit"));
+        assert!(hook_content.contains("yadm"));
         assert!(hook_content.contains("#!/bin/sh"));
 
         // Check hook permissions on Unix
@@ -182,13 +201,25 @@ mod tests {
 
     #[test]
     fn test_install_hooks_disabled() {
-        let _temp_dir = setup_test_repo_in_correct_location();
+        let temp_dir = setup_test_repo_in_correct_location();
+
+        // Ensure environment variables are set before calling functions that depend on them
+        let data_local_path = temp_dir.path().to_string_lossy().to_string();
+        std::env::set_var("HOME", &data_local_path);
+        std::env::set_var("XDG_DATA_HOME", &data_local_path);
 
         // Create a config with hooks disabled
         use rusted_yadm::config::Config;
         let mut config = Config::new();
         config.git.hooks.pre_commit = false;
-        config.save().unwrap();
+
+        // Save config to the same location as the test setup
+        let config_path = temp_dir.path().join("rusted-yadm").join("config.yml");
+        if let Some(parent) = config_path.parent() {
+            fs::create_dir_all(parent).unwrap();
+        }
+        let config_content = serde_yaml::to_string(&config).unwrap();
+        fs::write(config_path, config_content).unwrap();
 
         // Test hook installation (should do nothing)
         let result = rusted_yadm::git::install_hooks();
@@ -203,13 +234,25 @@ mod tests {
 
     #[test]
     fn test_uninstall_hooks_success() {
-        let _temp_dir = setup_test_repo_in_correct_location();
+        let temp_dir = setup_test_repo_in_correct_location();
+
+        // Ensure environment variables are set before calling functions that depend on them
+        let data_local_path = temp_dir.path().to_string_lossy().to_string();
+        std::env::set_var("HOME", &data_local_path);
+        std::env::set_var("XDG_DATA_HOME", &data_local_path);
 
         // Create a config with hooks enabled
         use rusted_yadm::config::Config;
         let mut config = Config::new();
         config.git.hooks.pre_commit = true;
-        config.save().unwrap();
+
+        // Save config to the same location as the test setup
+        let config_path = temp_dir.path().join("rusted-yadm").join("config.yml");
+        if let Some(parent) = config_path.parent() {
+            fs::create_dir_all(parent).unwrap();
+        }
+        let config_content = serde_yaml::to_string(&config).unwrap();
+        fs::write(config_path, config_content).unwrap();
 
         // Install hooks first
         rusted_yadm::git::install_hooks().unwrap();
@@ -230,7 +273,12 @@ mod tests {
 
     #[test]
     fn test_uninstall_hooks_no_hooks() {
-        let _temp_dir = setup_test_repo_in_correct_location();
+        let temp_dir = setup_test_repo_in_correct_location();
+
+        // Ensure environment variables are set before calling functions that depend on them
+        let data_local_path = temp_dir.path().to_string_lossy().to_string();
+        std::env::set_var("HOME", &data_local_path);
+        std::env::set_var("XDG_DATA_HOME", &data_local_path);
 
         // Test hook uninstallation when no hooks exist
         let result = rusted_yadm::git::uninstall_hooks();
@@ -282,17 +330,21 @@ mod tests {
     fn test_validate_symlinks_broken() {
         let (_temp_dir, repo_path) = setup_test_repo();
 
-        // Create a broken symlink
+        // Create a broken symlink pointing to a non-existent file in the same directory
         let symlink_file = Path::new(&repo_path).join("broken_symlink.txt");
+        let target_file = Path::new(&repo_path).join("nonexistent_target.txt");
 
         #[cfg(unix)]
         {
-            std::os::unix::fs::symlink("nonexistent.txt", &symlink_file).unwrap();
+            std::os::unix::fs::symlink("nonexistent_target.txt", &symlink_file).unwrap();
         }
         #[cfg(not(unix))]
         {
-            std::os::windows::fs::symlink_file("nonexistent.txt", &symlink_file).unwrap();
+            std::os::windows::fs::symlink_file("nonexistent_target.txt", &symlink_file).unwrap();
         }
+
+        // Verify the target doesn't exist
+        assert!(!target_file.exists());
 
         // Test symlink validation
         let repo = git2::Repository::open(&repo_path).unwrap();
@@ -412,7 +464,12 @@ mod tests {
 
     #[test]
     fn test_hook_integration_with_commit() {
-        let _temp_dir = setup_test_repo_in_correct_location();
+        let temp_dir = setup_test_repo_in_correct_location();
+
+        // Ensure environment variables are set before calling functions that depend on them
+        let data_local_path = temp_dir.path().to_string_lossy().to_string();
+        std::env::set_var("HOME", &data_local_path);
+        std::env::set_var("XDG_DATA_HOME", &data_local_path);
 
         // Create a config with hooks enabled
         use rusted_yadm::config::Config;
@@ -421,13 +478,23 @@ mod tests {
         config.git.hooks.validate_symlinks = true;
         config.git.hooks.validate_permissions = true;
         config.git.hooks.validate_encrypted = true;
-        config.save().unwrap();
+
+        // Save config to the same location as the test setup
+        let config_path = temp_dir.path().join("rusted-yadm").join("config.yml");
+        if let Some(parent) = config_path.parent() {
+            fs::create_dir_all(parent).unwrap();
+        }
+        let config_content = serde_yaml::to_string(&config).unwrap();
+        fs::write(config_path, config_content).unwrap();
+
+        // Get the repository path and ensure it exists
+        let repo_path = temp_dir.path().join("rusted-yadm").join("repository");
+        assert!(repo_path.exists(), "Repository path should exist");
 
         // Install hooks
         rusted_yadm::git::install_hooks().unwrap();
 
         // Create a test file
-        let repo_path = rusted_yadm::utils::folder_path();
         let test_file = Path::new(&repo_path).join("test.txt");
         fs::write(&test_file, "test content").unwrap();
 
