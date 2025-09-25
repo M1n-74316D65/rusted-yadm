@@ -1,6 +1,7 @@
 use dirs::data_local_dir;
 use std::fs;
 use std::io::{self, Write};
+use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use std::process::Command;
 use std::str;
@@ -111,7 +112,16 @@ pub fn copy_files_to_home() -> Result<(), Box<dyn std::error::Error>> {
             }
 
             match fs::copy(path, &destination) {
-                Ok(_) => println!("Copied: {:?}", relative_path),
+                Ok(_) => {
+                    // Preserve original file permissions
+                    if let Ok(metadata) = fs::metadata(path) {
+                        let permissions = metadata.permissions();
+                        if let Err(e) = fs::set_permissions(&destination, permissions) {
+                            eprintln!("Failed to set permissions for {:?}: {}", relative_path, e);
+                        }
+                    }
+                    println!("Copied: {:?}", relative_path);
+                }
                 Err(e) => {
                     if e.kind() == io::ErrorKind::PermissionDenied {
                         skipped_files.push(relative_path.to_path_buf());
