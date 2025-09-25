@@ -11,6 +11,14 @@ license = "GPL-3.0"
 keywords = ["dotfiles", "cli", "dotfiles_manager", "dotfiles-manager"]
 categories = ["command-line-utilities", "command-line-interface"]
 
+[[bin]]
+name = "rusted-yadm"
+path = "src/main.rs"
+
+[lib]
+name = "rusted_yadm"
+path = "src/lib.rs"
+
 [dependencies]
 
 openssl = "0.10"
@@ -18,3 +26,16 @@ git2 = "0.19"
 clap = { version = "4.5", features = ["derive"] }
 dirs = "5"
 walkdir = "2"
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.9"
+aes = "0.8"
+ctr = "0.9"
+hex = "0.4"
+rand = "0.8"
+rpassword = "7.3"
+sha2 = "0.10"
+reqwest = { version = "0.11", features = ["blocking"] }
+
+[dev-dependencies]
+tempfile = "3.8"
+dircpy = "0.3"

@@ -2,7 +2,7 @@ use dirs::data_local_dir;
 use std::fs;
 use std::io::{self, Write};
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::str;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -46,6 +46,27 @@ pub fn folder_path() -> String {
         .to_str()
         .unwrap()
         .to_string()
+}
+
+pub fn data_dir_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
+    Ok(data_local_dir()
+        .ok_or("Could not get data directory")?
+        .join("rusted-yadm"))
+}
+
+pub fn normalize_path(path: &str) -> Result<PathBuf, Box<dyn std::error::Error>> {
+    let path = path.trim();
+
+    if let Some(stripped) = path.strip_prefix("~/") {
+        let home_dir = dirs::home_dir().ok_or("Could not get home directory")?;
+        Ok(home_dir.join(stripped))
+    } else if path.starts_with('/') {
+        // Absolute path
+        Ok(PathBuf::from(path))
+    } else {
+        // Relative path - resolve from current directory
+        Ok(std::env::current_dir()?.join(path))
+    }
 }
 
 pub struct LoadingAnimation {
@@ -111,23 +132,61 @@ pub fn copy_files_to_home() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
 
-            match fs::copy(path, &destination) {
-                Ok(_) => {
-                    // Preserve original file permissions
-                    if let Ok(metadata) = fs::metadata(path) {
-                        let permissions = metadata.permissions();
-                        if let Err(e) = fs::set_permissions(&destination, permissions) {
-                            eprintln!("Failed to set permissions for {:?}: {}", relative_path, e);
+            // Handle symlinks and regular files
+            if path.is_symlink() {
+                // Handle symlinks
+                if let Ok(target) = fs::read_link(path) {
+                    // Remove existing destination if it exists
+                    if destination.exists() {
+                        if let Err(e) = fs::remove_file(&destination) {
+                            eprintln!("Failed to remove existing file {:?}: {}", relative_path, e);
+                            continue;
                         }
                     }
-                    println!("Copied: {:?}", relative_path);
+
+                    // Create the symlink
+                    #[cfg(unix)]
+                    {
+                        if let Err(e) = std::os::unix::fs::symlink(&target, &destination) {
+                            eprintln!("Failed to create symlink {:?}: {}", relative_path, e);
+                        } else {
+                            println!("Created symlink: {:?} -> {:?}", relative_path, target);
+                        }
+                    }
+                    #[cfg(not(unix))]
+                    {
+                        if let Err(e) = std::os::windows::fs::symlink_file(&target, &destination) {
+                            eprintln!("Failed to create symlink {:?}: {}", relative_path, e);
+                        } else {
+                            println!("Created symlink: {:?} -> {:?}", relative_path, target);
+                        }
+                    }
+                } else {
+                    eprintln!("Failed to read symlink target for {:?}", relative_path);
                 }
-                Err(e) => {
-                    if e.kind() == io::ErrorKind::PermissionDenied {
-                        skipped_files.push(relative_path.to_path_buf());
-                        eprintln!("Skipped (permission denied): {:?}", relative_path);
-                    } else {
-                        eprintln!("Failed to copy {:?}: {}", relative_path, e);
+            } else {
+                // Handle regular files
+                match fs::copy(path, &destination) {
+                    Ok(_) => {
+                        // Preserve original file permissions
+                        if let Ok(metadata) = fs::metadata(path) {
+                            let permissions = metadata.permissions();
+                            if let Err(e) = fs::set_permissions(&destination, permissions) {
+                                eprintln!(
+                                    "Failed to set permissions for {:?}: {}",
+                                    relative_path, e
+                                );
+                            }
+                        }
+                        println!("Copied: {:?}", relative_path);
+                    }
+                    Err(e) => {
+                        if e.kind() == io::ErrorKind::PermissionDenied {
+                            skipped_files.push(relative_path.to_path_buf());
+                            eprintln!("Skipped (permission denied): {:?}", relative_path);
+                        } else {
+                            eprintln!("Failed to copy {:?}: {}", relative_path, e);
+                        }
                     }
                 }
             }
