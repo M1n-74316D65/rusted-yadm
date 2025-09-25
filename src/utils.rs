@@ -1,7 +1,7 @@
 use dirs::data_local_dir;
 use std::fs;
 use std::io::{self, Write};
-use std::os::unix::fs::PermissionsExt;
+
 use std::path::Path;
 use std::process::Command;
 use std::str;
